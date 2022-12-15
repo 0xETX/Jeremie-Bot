@@ -202,6 +202,11 @@ if __name__ == "__main__":
     except:
         print("Could not connect to database. Terminating.")
         exit()
+        
+    #Makes a new attachments directory if ones does not exist
+    if not(os.path.isdir("attachments")):
+        print("Attachments directory not found. Creating new one.")
+        os.mkdir("attachments")
        
     #Start the bot
     client.run(TOKEN)
