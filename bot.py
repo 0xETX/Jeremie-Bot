@@ -143,8 +143,8 @@ async def distort(ctx,
         await ctx.respond("Invalid file header.")
         
     except:
-        raise Exception
         await ctx.respond("Something strange has occured. Could not complete the request.")
+        raise Exception
         
     #Deletes the temp folder and all files/folders in it
     rmtree(f"attachments/{safeFolder}")
