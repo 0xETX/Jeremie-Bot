@@ -1,6 +1,6 @@
 #===NOTE===
 #Wand may require either of the packages below to be installed
-#Windows: https://imagemagick.org/script/download.php#windows
+#Windows: https://imagemagick.org/script/download.php#windows, https://docs.wand-py.org/en/0.6.2/guide/install.html
 #Linux (Debian): apt-get install libmagickwand-dev
 import os
 import discord
