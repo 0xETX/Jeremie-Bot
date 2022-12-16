@@ -30,13 +30,13 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 # Bot Strings
-prefix = "jc!"
+prefix = "jr!"
 intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix = prefix, intents=intents)
 
-# Variables
-alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+# Custom command groups
+custom = client.create_group("custom", "Custom command creation.")
 
 # Prints if bot successfully runs
 @client.event
@@ -47,59 +47,6 @@ async def on_ready():
 @client.slash_command(name="ping", description="The bot pings the server to check response time. The lower, the faster the response.")
 async def ping(ctx):
     await ctx.respond(f"{ctx.author.mention}, Jeremie has arrived. `({round(client.latency*1000)}ms)`")
-
-# Custom Commands
-@client.slash_command(name="custom", description="Create or use custom commands.")
-async def custom(ctx,
-    create: Option(str, "Create a custom command. Supply the name of the command.", required=False, default=False),
-    action: Option(str, "Supply the desired output string.", required=False, default=False),
-    use: Option(str, "Use a custom command.", required=False, default=False)):
-
-    # Checks to see if create mode is on
-    if create:
-        # Valid length check
-        if 1 <= len(create) <= 16:
-            # Is action supplied?
-            if action:
-                # Is action length valid?
-                if 1 <= len(action) <= 1750:
-                    try:
-                        # Checks if a command of that name exists in the server
-                        sqlArgs = (ctx.guild.id, create)
-                        commandSearch = sqlCursor.execute("SELECT command FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
-                        if commandSearch.fetchall():
-                            await ctx.respond("A command with that name already exists! Please delete the command before proceeding with a new one.")
-                            return
-
-                        # Create and push the command
-                        sqlArgs = (ctx.guild.id, create, action)
-                        sqlCursor.execute("INSERT INTO servers VALUES (?, ?, ?)", sqlArgs)
-                        sqlConn.commit()
-                        await ctx.respond("Successfully created the custom command!")
-                    except:
-                        await ctx.respond("Something unexpected occured. Could not create command.")
-                        raise Exception
-            else:
-                await ctx.respond("Action field required.")
-        else:
-            await ctx.respond("Invalid name length. Must be 1-16 characters in length!")
-
-    # Checks to see if the user is trying to use a custom command
-    elif use:
-        try:
-            # Pulls and prints the command. Checks to see if one exists of that name.
-            sqlArgs = (ctx.guild.id, use)
-            commandSearch = sqlCursor.execute("SELECT action FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
-            if commandSearch:
-                await ctx.respond(str(commandSearch.fetchall()[0])[2:-3])
-            else:
-                await ctx.respond("No valid commands found!")
-        except:
-            await ctx.respond("An unexpected error has occured!")
-            raise Exception
-
-    else:
-        await ctx.respond("Arguments required!")
 
 # Distort Command
 @client.slash_command(name="distort", description="Distorts linked images into random directions. Currently supports: png, jpg, jpeg.")
@@ -187,6 +134,97 @@ async def polar(ctx, imagelink: Option(str, "Insert a link of the photo you wish
 
     #Removes the old file
     os.remove(fileName)
+
+# Custom Commands
+# use: Option(str, "Use a custom command.", required=False, default=False)
+@custom.command(name="create", description="Create custom commands.")
+async def create(ctx,
+    name: Option(str, "Supply the name of the command.", required=True, default=False),
+    action: Option(str, "Supply the desired output string.", required=True, default=False)):
+
+    # Checks to see if create mode is on
+    if name:
+        # Valid length check
+        if 1 <= len(name) <= 16:
+            # Is action supplied?
+            if action:
+                # Is action length valid?
+                if 1 <= len(action) <= 1750:
+                    try:
+                        # Checks if a command of that name exists in the server
+                        sqlArgs = (ctx.guild.id, name)
+                        commandSearch = sqlCursor.execute("SELECT command FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
+                        if commandSearch.fetchall():
+                            await ctx.respond("A command with that name already exists! Please delete the command before proceeding with a new one.")
+                            return
+
+                        # Create and push the command
+                        sqlArgs = (ctx.guild.id, name, action)
+                        sqlCursor.execute("INSERT INTO servers VALUES (?, ?, ?)", sqlArgs)
+                        sqlConn.commit()
+                        await ctx.respond("Successfully created the custom command!")
+                    except:
+                        await ctx.respond("Something unexpected occured. Could not create command.")
+                        raise Exception
+            else:
+                await ctx.respond("Action field required.")
+        else:
+            await ctx.respond("Invalid name length. Must be 1-16 characters in length!")
+
+    else:
+        await ctx.respond("Arguments required!")
+   
+@custom.command(name="use", description="Use custom commands.")
+async def use(ctx,     
+    command: Option(str, "Use a custom command.", required=True, default=False)):
+    
+    # Checks to see if the user is trying to use a custom command
+    if command:
+        try:
+            # Pulls and prints the command. Checks to see if one exists of that name.
+            sqlArgs = (ctx.guild.id, command)
+            commandSearch = sqlCursor.execute("SELECT action FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
+            await ctx.respond(str(commandSearch.fetchall()[0])[2:-3])
+            
+        except:
+            await ctx.respond("No valid commands found!")
+            
+    else:
+        await ctx.respond("Arguments needed!")
+        return
+
+# Lists all custom commands on a server 
+@custom.command(name="list", description="List custom commands created on the server.")
+async def list(ctx):
+    returnList = "Commands that currently exist on this server:\n"
+    
+    # Fetches all custom commands and prints them if available
+    try:
+        commandSearch = sqlCursor.execute(f"SELECT command FROM servers WHERE server_id = {ctx.guild.id}")
+        commandList = commandSearch.fetchall()
+        for commands in commandList:
+            returnList += f"{commands[0]}\n"
+        await ctx.respond(returnList)
+        
+    except:
+        await ctx.respond("No commands found!")
+        raise Exception
+
+# Deletes custom commands on a server        
+@custom.command(name="remove", description="Remove custom commands created on the server.")
+async def remove(ctx,
+    command: Option(str, "Use a custom command.", required=True, default=False)):
+    
+    # Checks to see if a command with the name exists - if not, deletes
+    try:
+        sqlArgs = (ctx.guild.id, command)
+        commandSearch = sqlCursor.execute("DELETE FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
+        sqlConn.commit()
+        await ctx.respond("Command successfully deleted!")
+        
+    except:
+        await ctx.respond("No commands found!")
+        raise Exception
 
 """
 TBD if used or not
