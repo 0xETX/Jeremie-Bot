@@ -1,8 +1,13 @@
 .env
 *.env
+*.db
 package.json
 package-lock.json
 __pycache__/
 Dog/
 node_modules/
 attachments/
+.ideas/
+venv/
+attachments/
+.git/
