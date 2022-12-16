@@ -1,4 +1,4 @@
 Augmentor==0.2.10
-py-cord==2.1.0
+py-cord==2.3.2
 Wand==0.6.10
 python-dotenv==0.19.2

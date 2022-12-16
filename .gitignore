@@ -1,2 +1,8 @@
 .env
 *.env
+package.json
+package-lock.json
+__pycache__/
+Dog/
+node_modules/
+attachments/
