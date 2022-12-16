@@ -1,6 +1,6 @@
 #===NOTE===
 #Wand may require either of the packages below to be installed
-#Windows: https://imagemagick.org/script/download.php#windows
+#Windows: https://imagemagick.org/script/download.php#windows, https://docs.wand-py.org/en/0.6.2/guide/install.html
 #Linux (Debian): apt-get install libmagickwand-dev
 import os
 import discord
@@ -82,10 +82,11 @@ async def distort(ctx,
     # Attempts to distort and send the image
     try:
         await ctx.respond("Distorting your image. One moment...")
-        p = Augmentor.Pipeline(r"attachments/"+safeFolder)
-        p.crop_random(probability=1, percentage_area=0.9)
-        p.random_distortion(probability=1, grid_width=random.randint(4, 7), grid_height=random.randint(8,12), magnitude=mag)
-        p.sample(1)
+        picture = Augmentor.Pipeline(r"attachments/"+safeFolder)
+        picture.crop_random(probability=1, percentage_area=0.9)
+        picture.random_distortion(probability=1, grid_width=random.randint(4, 7), grid_height=random.randint(8,12), magnitude=mag)
+        picture.sample(1)
+        picture.sample(1)
         os.remove(fileName)
         await ctx.followup.send(file=discord.File(glob(f"attachments/{safeFolder}/output/*")[0]))
 
