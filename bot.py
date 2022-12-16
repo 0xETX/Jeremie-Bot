@@ -22,8 +22,8 @@ from glob import glob
 from wand.image import Image
 from wand.display import display
 
-# Do not delete 123456876543234567898765432
-keepOutput = 1
+# Deletes created temp files. 1 = Delete output, 0 = Keep output.
+deleteOutput = 1
 
 # Env token loading
 load_dotenv()
@@ -98,7 +98,7 @@ async def distort(ctx,
         raise Exception
 
     # Deletes the temp folder and all files/folders in it
-    if keepOutput: rmtree(f"attachments/{safeFolder}")
+    if deleteOutput: rmtree(f"attachments/{safeFolder}")
 
 # Polar Distortion command
 @client.slash_command(name="polar", description="Distorts linked image into polar. Currently supports: png, jpg, jpeg.")
@@ -184,7 +184,8 @@ async def use(ctx,
             # Pulls and prints the command. Checks to see if one exists of that name.
             sqlArgs = (ctx.guild.id, command)
             commandSearch = sqlCursor.execute("SELECT action FROM servers WHERE server_id = ? AND command = ?", sqlArgs)
-            await ctx.respond(str(commandSearch.fetchall()[0])[2:-3])
+            commandList = commandSearch.fetchall()
+            await ctx.respond(str(commandList[0][0]))
             
         except:
             await ctx.respond("No valid commands found!")
