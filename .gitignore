@@ -1,6 +1,9 @@
+# Ignore Files
 .env
 *.env
 *.db
+
+# Ignore Folders
 package.json
 package-lock.json
 __pycache__/
