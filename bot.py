@@ -77,6 +77,7 @@ async def distort(ctx,
     # If no link is provided, search last five messages
     if imagelink == None:
         messages = await ctx.channel.history(limit=5).flatten()
+        messages.reverse()
         for msg in messages:
             # Checks to see if there are any images as attachments
             if (msg.attachments):
