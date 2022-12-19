@@ -38,6 +38,9 @@ client = commands.Bot(command_prefix = prefix, intents=intents)
 # Custom command groups
 custom = client.create_group("custom", "Custom command creation.")
 
+# Others
+validUrl = r"[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\-a-zA-Z0-9@:%_\+\.~#?&\/=]*\.(jpg|jpeg|png))"
+
 # Prints if bot successfully runs
 @client.event
 async def on_ready():
@@ -48,10 +51,18 @@ async def on_ready():
 async def ping(ctx):
     await ctx.respond(f"{ctx.author.mention}, Jeremie has arrived. `({round(client.latency*1000)}ms)`")
 
+# Test Command
+@client.slash_command(name="test", description="For testing purposes.")
+async def test(ctx):
+    messages = await ctx.channel.history(limit=5).flatten()
+    for message in messages:
+        print(message.content, sep="\n")
+        await ctx.respond(f"**ECHO:** {message.content}")
+
 # Distort Command
 @client.slash_command(name="distort", description="Distorts linked images into random directions. Currently supports: png, jpg, jpeg.")
 async def distort(ctx,
-                imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=True),
+                imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=False, default=None),
                 magnitude: Option(int, "Intensity of distortion. Recommended settings are -50 to 50.", required=False)):
 
     # Create temp folder name
@@ -63,6 +74,19 @@ async def distort(ctx,
     except:
         mag = random.randint(25, 30)
 
+    # If no link is provided, search last five messages
+    if imagelink == None:
+        messages = await ctx.channel.history(limit=5).flatten()
+        for msg in messages:
+            print(msg.content)
+            if re.search(validUrl, msg.content):
+                imagelink = (re.search(validUrl, msg.content)).group(0)
+                print(imagelink)
+                
+        if imagelink == None:
+            await ctx.respond("Could not locate a valid format in the past 5 messages.")
+            return
+         
     # Checks if extension is valid
     if imagelink[-3:] in ["png", "jpg"]:
         fileName = f"attachments/{safeFolder}/{gen_alpha(32) + imagelink[-4:]}"
@@ -242,12 +266,28 @@ if __name__ == "__main__":
     # Attempts to execute SQLite3. If it fails to do so, exits.
     try:
         print(f"Connecting with SQLite3 version {sqlite3.version}...")
+        
+        # Checks to see if database file exists
+        if not(os.path.isfile("Jeremie.db")):
+            databaseExists = False
+            print("Jeremie.db file not found. Attempting to create a new database...")
+        else:
+            databaseExists = True
+            print("Jeremie.db file found!")
+        
         sqlConn = sqlite3.connect("Jeremie.db")
         sqlCursor = sqlConn.cursor()
-        print("Successfully connected!")
+        
+        # If database file had to be created, this will add the correct tables
+        if not(databaseExists):
+            sqlCursor.execute("CREATE TABLE servers (server_id, command, action)")
+            sqlCursor.execute("CREATE TABLE users (user_id, jeremites)")
+            
     except:
         print("Could not connect to database. Terminating.")
         exit()
+        
+    print("Successfully connected!")
 
     # Makes a new attachments directory if ones does not exist
     if not(os.path.isdir("attachments")):
