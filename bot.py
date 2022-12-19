@@ -78,10 +78,17 @@ async def distort(ctx,
     if imagelink == None:
         messages = await ctx.channel.history(limit=5).flatten()
         for msg in messages:
-            print(msg.content)
+            # Checks to see if there are any images as attachments
+            if (msg.attachments):
+                for attachmentNumber in range(len(msg.attachments)):
+                    if re.search(validUrl, str(msg.attachments[attachmentNumber])):
+                        imagelink = (re.search(validUrl, str(msg.attachments[attachmentNumber]))).group(0)
+                        break
+                        
+            #Checks to see if there are image links in text    
             if re.search(validUrl, msg.content):
                 imagelink = (re.search(validUrl, msg.content)).group(0)
-                print(imagelink)
+                break
                 
         if imagelink == None:
             await ctx.respond("Could not locate a valid format in the past 5 messages.")
@@ -109,7 +116,6 @@ async def distort(ctx,
         picture = Augmentor.Pipeline(r"attachments/"+safeFolder)
         picture.crop_random(probability=1, percentage_area=0.9)
         picture.random_distortion(probability=1, grid_width=random.randint(4, 7), grid_height=random.randint(8,12), magnitude=mag)
-        picture.sample(1)
         picture.sample(1)
         os.remove(fileName)
         await ctx.followup.send(file=discord.File(glob(f"attachments/{safeFolder}/output/*")[0]))
