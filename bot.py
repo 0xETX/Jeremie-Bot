@@ -134,8 +134,28 @@ async def distort(ctx,
 
 # Polar Distortion command
 @client.slash_command(name="polar", description="Distorts linked image into polar. Currently supports: png, jpg, jpeg.")
-async def polar(ctx, imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=True)):
+async def polar(ctx, imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=False)):
     # Checks to see if a valid extension is being used
+    if imagelink == None:
+        messages = await ctx.channel.history(limit=5).flatten()
+        messages.reverse()
+        for msg in messages:
+            # Checks to see if there are any images as attachments
+            if (msg.attachments):
+                for attachmentNumber in range(len(msg.attachments)):
+                    if re.search(validUrl, str(msg.attachments[attachmentNumber])):
+                        imagelink = (re.search(validUrl, str(msg.attachments[attachmentNumber]))).group(0)
+                        break
+                        
+            #Checks to see if there are image links in text    
+            if re.search(validUrl, msg.content):
+                imagelink = (re.search(validUrl, msg.content)).group(0)
+                break
+                
+        if imagelink == None:
+            await ctx.respond("Could not locate a valid format in the past 5 messages.")
+            return
+        
     if imagelink[-3:] in ["png", "jpg"]:
         fileName = f"attachments/{gen_alpha(32) + imagelink[-4:]}"
     elif imagelink[-4:] in ["jpeg"]:
