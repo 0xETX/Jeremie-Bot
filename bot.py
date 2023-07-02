@@ -85,7 +85,7 @@ async def dailyanimal(ctx,
 @client.slash_command(name="cats", description="Generates a random picture of a cat.")
 async def cats(ctx):
     cat = requests.get(r"https://cataas.com/cat/says/%20").content
-    filename = ''.join(random.choice(alphanumeric) for i in range(32)) + ".jpg"
+    filename = gen_alpha(32) + ".jpg"
     with open(f"attachments/{filename}", "wb") as handler:
         handler.write(cat)
     await ctx.respond(file=discord.File(f"attachments/{filename}"))
@@ -96,7 +96,7 @@ async def cats(ctx):
 async def dogs(ctx):
     dog_data = requests.get(r"https://dog.ceo/api/breeds/image/random").content
     dog = requests.get(str(dog_data).split('"')[3].replace("\\", "")).content
-    filename = ''.join(random.choice(alphanumeric) for i in range(32)) + ".jpg"
+    filename = gen_alpha(32) + ".jpg"
     with open(f"attachments/{filename}", "wb") as handler:
         handler.write(dog)
     await ctx.respond(file=discord.File(f"attachments/{filename}"))
