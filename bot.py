@@ -12,10 +12,11 @@ import subprocess
 import urllib.request
 import Augmentor
 import sqlite3
+import requests
 from shutil import rmtree
 from time import sleep
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.commands import Option
 from threading import Thread
 from glob import glob
@@ -46,6 +47,61 @@ validUrl = r"[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
 
+"""
+#Daily Tasks
+@tasks.loop(hours=24.0)
+async def daily_tasks():
+    animals_list = ["dog", "cat"]
+    select_animal = random.choice(animals_list)
+    
+    if select_animal == "dog":
+        dog_data = requests.get(r"https://dog.ceo/api/breeds/image/random").content
+        animal_picture = requests.get(str(dog_data).split('"')[3].replace("\\", "")).content
+        
+    elif select_animal == "cat":
+        animal_picture = requests.get(r"https://cataas.com/cat/says/%20").content
+        
+    else:
+        print("ERROR 50: Unexpected animal result!")
+        animal_picture = requests.get(r"https://cataas.com/cat/says/%20").content
+        
+    with open("attachments/random_animal_image.jpg", "wb") as handler:
+        handler.write(animal_picture)
+"""
+
+"""
+#Set Daily Animal Picture Location
+@client.slash_command(name="dailyanimal", description="Set location of daily animal pictures. Administrators only. Set to 0 to disable.")
+async def dailyanimal(ctx,
+    channel: Option(str, "Choose the channel to post the images in.", required=True)):
+    
+    if ctx.message.author.mention == discord.Permissions.administrator:
+        print("Admin!")
+    else:
+        print("Not admin!")
+"""
+
+#Random Cat Command
+@client.slash_command(name="cats", description="Generates a random picture of a cat.")
+async def cats(ctx):
+    cat = requests.get(r"https://cataas.com/cat/says/%20").content
+    filename = gen_alpha(32) + ".jpg"
+    with open(f"attachments/{filename}", "wb") as handler:
+        handler.write(cat)
+    await ctx.respond(file=discord.File(f"attachments/{filename}"))
+    os.remove("attachments/"+filename)
+    
+#Random Dog Command
+@client.slash_command(name="dogs", description="Generates a random picture of a dog.")
+async def dogs(ctx):
+    dog_data = requests.get(r"https://dog.ceo/api/breeds/image/random").content
+    dog = requests.get(str(dog_data).split('"')[3].replace("\\", "")).content
+    filename = gen_alpha(32) + ".jpg"
+    with open(f"attachments/{filename}", "wb") as handler:
+        handler.write(dog)
+    await ctx.respond(file=discord.File(f"attachments/{filename}"))
+    os.remove("attachments/"+filename)
+
 # Ping Command
 @client.slash_command(name="ping", description="The bot pings the server to check response time. The lower, the faster the response.")
 async def ping(ctx):
@@ -58,6 +114,50 @@ async def test(ctx):
     for message in messages:
         print(message.content, sep="\n")
         await ctx.respond(f"**ECHO:** {message.content}")
+
+# Dice Roll Command
+@client.slash_command(name="diceroll", description="Roll a custom dice!")
+async def diceroll(ctx,
+                   diceset: Option(str, "Choose the dice you wish to use. Format: <count>d<max_number>. Count must at least 1, at most 15.", required=True)):
+    
+    rollcount = diceset.split("d")
+    diceemoji = ["<:greatroll:1125593848475824199>", "<:averageroll:1125594666604183592>", "<:badroll:1125593850484887562>"]
+    
+    try:
+        rollcount[0] = int(rollcount[0])
+        rollcount[1] = int(rollcount[1])
+        if rollcount[0] < 1 or rollcount[0] > 15:
+            await ctx.respond("Not a valid count amount! Count must at least 1, at most 15.")
+            return
+            
+    except:
+        await ctx.respond("Invalid format!")
+        return
+
+    await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]}...**")
+    await asyncio.sleep(1.5)
+      
+    for rolls in range(rollcount[0]):
+        rolled = random.randint(1, rollcount[1])
+        
+        if rolled == rollcount[1]:
+            await ctx.send(f"{diceemoji[0]} **CRITICAL SUCCESS!** You rolled {rolled}.")
+            
+        elif (rolled / rollcount[1]) >= 0.67:
+            await ctx.send(f"{diceemoji[0]} You rolled {rolled}.")
+            
+        elif rolled == 1:
+            await ctx.send(f"{diceemoji[2]} **CRITICAL FAILURE!** You rolled {rolled}.")
+            
+        elif (rolled / rollcount[1]) <= 0.34:
+            await ctx.send(f"{diceemoji[2]} You rolled {rolled}.")
+            
+        else:
+            await ctx.send(f"{diceemoji[1]} You rolled {rolled}.")
+        
+        await asyncio.sleep(2.5)
+        
+    await ctx.respond(f"**Finished rolling {rollcount[0]}d{rollcount[1]}!**")
 
 # Distort Command
 @client.slash_command(name="distort", description="Distorts linked images into random directions. Currently supports: png, jpg, jpeg.")
@@ -134,8 +234,28 @@ async def distort(ctx,
 
 # Polar Distortion command
 @client.slash_command(name="polar", description="Distorts linked image into polar. Currently supports: png, jpg, jpeg.")
-async def polar(ctx, imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=True)):
+async def polar(ctx, imagelink: Option(str, "Insert a link of the photo you wish to distort.", required=False)):
     # Checks to see if a valid extension is being used
+    if imagelink == None:
+        messages = await ctx.channel.history(limit=5).flatten()
+        messages.reverse()
+        for msg in messages:
+            # Checks to see if there are any images as attachments
+            if (msg.attachments):
+                for attachmentNumber in range(len(msg.attachments)):
+                    if re.search(validUrl, str(msg.attachments[attachmentNumber])):
+                        imagelink = (re.search(validUrl, str(msg.attachments[attachmentNumber]))).group(0)
+                        break
+                        
+            #Checks to see if there are image links in text    
+            if re.search(validUrl, msg.content):
+                imagelink = (re.search(validUrl, msg.content)).group(0)
+                break
+                
+        if imagelink == None:
+            await ctx.respond("Could not locate a valid format in the past 5 messages.")
+            return
+        
     if imagelink[-3:] in ["png", "jpg"]:
         fileName = f"attachments/{gen_alpha(32) + imagelink[-4:]}"
     elif imagelink[-4:] in ["jpeg"]:
