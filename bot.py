@@ -118,46 +118,70 @@ async def test(ctx):
 # Dice Roll Command
 @client.slash_command(name="diceroll", description="Roll a custom dice!")
 async def diceroll(ctx,
-                   diceset: Option(str, "Choose the dice you wish to use. Format: <count>d<max_number>. Count must at least 1, at most 15.", required=True)):
+                   diceset: Option(str, "Choose the dice you wish to use. Format: <count>d<dice_value>. Count: 1-15. Dice_Value: 2-10000.", required=True),
+                   modifier: Option(int, "Add or subtract a specific value from the final result. Example: 5, +5, -5.", required=False)):
     
+    # Set important variables. rollcount = data, diceemoji = emojis used.
     rollcount = diceset.split("d")
     diceemoji = ["<:greatroll:1125593848475824199>", "<:averageroll:1125594666604183592>", "<:badroll:1125593850484887562>"]
     
+    # Make sure the data provided is valid
     try:
         rollcount[0] = int(rollcount[0])
         rollcount[1] = int(rollcount[1])
-        if rollcount[0] < 1 or rollcount[0] > 15:
-            await ctx.respond("Not a valid count amount! Count must at least 1, at most 15.")
+        if not (1 <= rollcount[0] <= 15):
+            await ctx.respond("Not a valid count size! Count must at least 1, at most 15.")
             return
-            
+        if not (2 <= rollcount[1] <= 10000):
+            await ctx.respond("Invalid dice value! Must be minimum 2, maximum 10000.")
+            return
     except:
-        await ctx.respond("Invalid format!")
+        await ctx.respond("Invalid format! Proper format examples: 1d20, 3d6, 2d4.")
         return
+    
+    # Check if modifier exists and is valid
+    if modifier != None:
+        try:
+            rollmodifier = int(modifier)
+        except:
+            await ctx.respond("Invalid format! Proper format examples: 7, +3, -4.")
+            return
+    else:
+        rollmodifier = 0
 
-    await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]}...**")
+    # Begin sequence
+    if modifier == 0:
+        await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]}...**")
+    else:
+        await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]} with modifier {rollmodifier}...**")
     await asyncio.sleep(1.5)
-      
+    
+    # Counter
+    totalroll = 0
+    
+    # Iterate through rolls
     for rolls in range(rollcount[0]):
         rolled = random.randint(1, rollcount[1])
+        totalroll += rolled
         
         if rolled == rollcount[1]:
             await ctx.send(f"{diceemoji[0]} **CRITICAL SUCCESS!** You rolled {rolled}.")
-            
         elif (rolled / rollcount[1]) >= 0.67:
             await ctx.send(f"{diceemoji[0]} You rolled {rolled}.")
-            
         elif rolled == 1:
             await ctx.send(f"{diceemoji[2]} **CRITICAL FAILURE!** You rolled {rolled}.")
-            
         elif (rolled / rollcount[1]) <= 0.34:
             await ctx.send(f"{diceemoji[2]} You rolled {rolled}.")
-            
         else:
             await ctx.send(f"{diceemoji[1]} You rolled {rolled}.")
         
         await asyncio.sleep(2.5)
-        
-    await ctx.respond(f"**Finished rolling {rollcount[0]}d{rollcount[1]}!**")
+    
+    # Results
+    if modifier == 0:
+        await ctx.respond(f"**Finished rolling {rollcount[0]}d{rollcount[1]}!** (Total: {(totalroll + rollmodifier)}, Average Roll: {round(totalroll/rollcount[0], 3)}")
+    else:
+        await ctx.respond(f"**Finished rolling {rollcount[0]}d{rollcount[1]}!** (Total: {(totalroll + rollmodifier)}, Average Roll: {round(totalroll/rollcount[0], 3)}, Modifier: {rollmodifier})")
 
 # Distort Command
 @client.slash_command(name="distort", description="Distorts linked images into random directions. Currently supports: png, jpg, jpeg.")
