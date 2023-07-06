@@ -150,7 +150,7 @@ async def diceroll(ctx,
         rollmodifier = 0
 
     # Begin sequence
-    if modifier == 0:
+    if rollmodifier == 0:
         await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]}...**")
     else:
         await ctx.respond(f"**Rolling {rollcount[0]}d{rollcount[1]} with modifier {rollmodifier}...**")
