@@ -403,15 +403,6 @@ async def remove(ctx,
         await ctx.respond("No commands found!")
         raise Exception
 
-"""
-TBD if used or not
-@client.command(brief="Random dog image", description="The bot will send a random image of a dog.", commands_heading="Fun")
-async def dog(ctx):
-    cwd = os.getcwd() + "\\Dog"
-    randfile = random.choice(os.listdir(cwd))
-    await ctx.respond(file=discord.File(cwd+"\\"+randfile))
-        """
-
 # Main
 if __name__ == "__main__":
     # Attempts to execute SQLite3. If it fails to do so, exits.
