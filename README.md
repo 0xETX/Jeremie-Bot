@@ -1,2 +1,2 @@
 # Jeremie-Bot
-Jeremie Discord Bot
+A simple Discord bot with some unremarkable features.
